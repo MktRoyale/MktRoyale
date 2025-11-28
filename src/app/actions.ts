@@ -1,17 +1,28 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabaseClient'
-import { revalidatePath } from 'next/cache'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export async function logout() {
-  const supabase = createServerSupabaseClient()
-  const { error } = await supabase.auth.signOut()
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
 
-  if (error) {
-    throw new Error('Error signing out')
-  }
-
-  revalidatePath('/', 'layout')
+  await supabase.auth.signOut()
   redirect('/')
 }
