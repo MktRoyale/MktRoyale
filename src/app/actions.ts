@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation'
 
 export async function logout() {
 
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
 
@@ -20,11 +20,19 @@ export async function logout() {
 
       cookies: {
 
-        getAll() { return cookieStore.getAll() },
+        getAll() {
+
+          return cookieStore.getAll()
+
+        },
 
         setAll(cookiesToSet) {
 
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => {
+
+            cookieStore.set(name, value, options)
+
+          })
 
         },
 
