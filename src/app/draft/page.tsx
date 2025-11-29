@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { CORE_SLOTS, WILDCARD_SLOTS, TOTAL_SLOTS, ABILITIES } from "@/lib/constants";
 import Link from "next/link";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Simple debounce utility
 function debounce<T extends (...args: any[]) => any>(func: T, delay: number): T & { cancel: () => void } {
@@ -253,13 +254,13 @@ export default function Draft() {
   };
 
   const filteredStocks = MOCK_STOCKS.filter(stock =>
-    stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+    stock?.symbol?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
+    stock?.name?.toLowerCase().includes(searchQuery?.toLowerCase() || '')
   );
 
-  const selectedCount = selectedStocks.filter(Boolean).length;
-  const coreCount = selectedStocks.slice(0, CORE_SLOTS).filter(Boolean).length;
-  const canSubmit = coreCount === CORE_SLOTS;
+  const selectedCount = selectedStocks?.filter(Boolean).length || 0;
+  const coreCount = selectedStocks?.slice(0, CORE_SLOTS)?.filter(Boolean).length || 0;
+  const canSubmit = coreCount === CORE_SLOTS && selectedStocks?.length > 0;
 
   // Loading state
   if (loading) {
@@ -314,7 +315,8 @@ export default function Draft() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <ErrorBoundary>
+      <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-electric-yellow mb-4">Chrome Draft Arena</h1>
@@ -358,19 +360,25 @@ export default function Draft() {
                   >
                     ×
                   </button>
-                  <img
-                    src={`https://logo.clearbit.com/${stock?.symbol?.toLowerCase()}.com`}
-                    alt={`${stock?.symbol || 'Stock'} logo`}
-                    className="w-8 h-8 rounded object-contain mb-2"
-                    onError={(e) => {
-                      // Fallback to a generic stock icon if logo fails to load
-                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxNiIgeT0iMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
-                    }}
-                  />
-                  <div className="font-bold text-lg">{stock.symbol}</div>
-                  <div className="text-sm text-gray-300 text-center">{stock.name}</div>
-                  <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-success-green' : 'text-danger-red'}`}>
-                    {stock.change >= 0 ? '+' : ''}{stock.change}%
+                  {stock?.symbol ? (
+                    <img
+                      src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
+                      alt={`${stock.symbol} logo`}
+                      className="w-8 h-8 rounded object-contain mb-2"
+                      onError={(e) => {
+                        // Fallback to a generic stock icon if logo fails to load
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxNiIgeT0iMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-gray-600 mb-2 flex items-center justify-center">
+                      <span className="text-xs text-gray-400">?</span>
+                    </div>
+                  )}
+                  <div className="font-bold text-lg">{stock?.symbol || '???'}</div>
+                  <div className="text-sm text-gray-300 text-center">{stock?.name || 'Unknown Stock'}</div>
+                  <div className={`text-sm font-medium ${stock?.change >= 0 ? 'text-success-green' : 'text-danger-red'}`}>
+                    {stock?.change !== undefined ? (stock.change >= 0 ? '+' : '') + stock.change + '%' : 'N/A'}
                   </div>
                 </>
               ) : (
@@ -498,25 +506,31 @@ export default function Draft() {
                       </button>
 
                       <div className="flex items-center gap-2">
-                        <img
-                          src={`https://logo.clearbit.com/${stock?.symbol?.toLowerCase()}.com`}
-                          alt={`${stock?.symbol || 'Stock'} logo`}
-                          className="w-6 h-6 rounded object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxMiIgeT0iMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
-                          }}
-                        />
+                        {stock?.symbol ? (
+                          <img
+                            src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
+                            alt={`${stock.symbol} logo`}
+                            className="w-6 h-6 rounded object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxMiIgeT0iMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded bg-gray-600 flex items-center justify-center">
+                            <span className="text-xs text-gray-400">?</span>
+                          </div>
+                        )}
                         <div>
-                          <div className="font-bold text-white">{stock.symbol}</div>
-                          <div className="text-sm text-gray-400">{stock.name}</div>
+                          <div className="font-bold text-white">{stock?.symbol || '???'}</div>
+                          <div className="text-sm text-gray-400">{stock?.name || 'Unknown Stock'}</div>
                         </div>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="font-mono text-white">${stock.price}</div>
-                      <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-success-green' : 'text-danger-red'}`}>
-                        {stock.change >= 0 ? '+' : ''}{stock.change}%
+                      <div className="font-mono text-white">${stock?.price?.toFixed(2) || 'N/A'}</div>
+                      <div className={`text-sm font-medium ${stock?.change >= 0 ? 'text-success-green' : 'text-danger-red'}`}>
+                        {stock?.change !== undefined ? (stock.change >= 0 ? '+' : '') + stock.change + '%' : 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -564,5 +578,6 @@ export default function Draft() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

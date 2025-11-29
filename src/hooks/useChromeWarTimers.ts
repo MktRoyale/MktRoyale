@@ -92,32 +92,31 @@ export const getNextDraftOpenTime = (currentDate: Date): Date => {
 };
 
 // Calculate draft close time (next Monday at 9:30 AM ET)
-export const getDraftCloseTime = (currentDate: Date): Date => {
+const getDraftCloseTime = (now: Date): Date => {
   const DRAFT_CLOSE_HOUR = 9;  // 9 AM ET
   const DRAFT_CLOSE_MINUTE = 30; // 30 minutes ET
 
-  // Use toZonedTime to get the current date aligned with ET
-  const nowET = toZonedTime(currentDate, TIME_ZONE);
-  let date = new Date(nowET);
-  const day = date.getDay(); // 0=Sun, 1=Mon
+  // Use 'date-fns-tz' to establish a consistent starting point in the target time zone (ET).
+  const nowET = toZonedTime(now, TIME_ZONE);
+  let target = new Date(nowET);
 
-  // Calculate days until Monday (1)
-  let diff = 1 - day;
-  if (diff < 0) {
-    diff += 7; // Wrap to next week
+  // 1. Start by finding the next Monday.
+  target.setDate(nowET.getDate() + (1 + 7 - nowET.getDay()) % 7);
+
+  // 2. Set the exact close time.
+  target.setHours(DRAFT_CLOSE_HOUR, DRAFT_CLOSE_MINUTE, 0, 0);
+
+  // 3. Handle the edge case: If the calculated target is TODAY (Monday) but the current time is ALREADY past 9:30 AM ET, we must target the following Monday.
+  const isTodayMonday = nowET.getDay() === 1;
+  const isPastCloseTime = nowET.getHours() > DRAFT_CLOSE_HOUR ||
+                          (nowET.getHours() === DRAFT_CLOSE_HOUR && nowET.getMinutes() >= DRAFT_CLOSE_MINUTE);
+
+  if (isTodayMonday && isPastCloseTime) {
+      target.setDate(target.getDate() + 7); // Advance to next Monday
   }
 
-  date.setDate(date.getDate() + diff);
-  date.setHours(DRAFT_CLOSE_HOUR, DRAFT_CLOSE_MINUTE, 0, 0);
-
-  // EDGE CASE: If it is currently Monday and past 9:30 AM ET, target the NEXT Monday.
-  if (day === 1 && nowET.getHours() > DRAFT_CLOSE_HOUR) {
-    date.setDate(date.getDate() + 7);
-  } else if (day === 1 && nowET.getHours() === DRAFT_CLOSE_HOUR && nowET.getMinutes() >= DRAFT_CLOSE_MINUTE) {
-    date.setDate(date.getDate() + 7);
-  }
-
-  return date;
+  // Convert the local date object back to a UTC/standard Date object for countdown math.
+  return target;
 };
 
 // Calculate DROP number (1=Tue, 2=Wed, 3=Thu)
