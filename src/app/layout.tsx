@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
+import StarfieldBackground from "@/components/StarfieldBackground";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-cyber-black text-white min-h-screen`}
       >
-        <div className="min-h-screen bg-cyber-black">
+        {/* Animated Starfield Background */}
+        <StarfieldBackground />
+
+        <div className="min-h-screen bg-cyber-black relative z-10">
           {/* Header */}
           <header className="border-b border-neon-teal/20 bg-cyber-black/95 backdrop-blur-sm">
             <div className="container mx-auto px-4 py-4">

@@ -1,11 +1,15 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;600&display=swap');
 
 :root {
   --background: #0A0A0F;
   --foreground: #ffffff;
-  --cyber-black: #0A0A0F;
-  --electric-yellow: #FFE600;
-  --neon-teal: #00E5FF;
+  --cyber-black: #0A0A0F; /* Main background, deep void */
+  --electric-yellow: #FFE600; /* CTAs, boosts, primary accents */
+  --neon-teal: #00E5FF; /* Shields, active states, secondary accents */
+  --glitch-red: #FF0055; /* Debuffs, errors, culls, alerts */
+  --off-white-text: #E0E0E0; /* Main readable text */
+  --subtle-gray: #333344; /* Borders, inactive elements, subtle divisions */
 }
 
 @theme inline {
@@ -14,13 +18,105 @@
   --color-cyber-black: var(--cyber-black);
   --color-electric-yellow: var(--electric-yellow);
   --color-neon-teal: var(--neon-teal);
+  --color-glitch-red: var(--glitch-red);
+  --color-off-white-text: var(--off-white-text);
+  --color-subtle-gray: var(--subtle-gray);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--cyber-black);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  color: var(--off-white-text);
+  font-family: 'Roboto Mono', var(--font-mono), monospace;
   min-height: 100vh;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--electric-yellow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Cyberpunk Button Styling */
+button {
+  background-color: var(--electric-yellow);
+  color: var(--cyber-black);
+  font-family: 'Orbitron', sans-serif;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 0 8px var(--electric-yellow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+button:hover {
+  background-color: #FFFA80;
+  box-shadow: 0 0 15px var(--electric-yellow);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Cyberpunk Input Styling */
+input[type="text"], input[type="email"], input[type="password"] {
+  background-color: var(--subtle-gray);
+  border: 1px solid var(--neon-teal);
+  color: var(--off-white-text);
+  padding: 0.7rem;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+  font-family: 'Roboto Mono', monospace;
+}
+
+input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+  outline: none;
+  border-color: var(--electric-yellow);
+  box-shadow: 0 0 8px var(--electric-yellow);
+  background-color: rgba(51, 51, 68, 0.8);
+}
+
+/* Cyberpunk Card Styling */
+.cyber-card {
+  background: rgba(10, 10, 15, 0.9);
+  border: 1px solid var(--neon-teal);
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.cyber-card:hover {
+  border-color: var(--electric-yellow);
+  box-shadow: 0 0 20px rgba(255, 230, 0, 0.2);
+}
+
+/* Glitch Effect for Alerts */
+.glitch-text {
+  position: relative;
+  color: var(--glitch-red);
+  text-shadow:
+    0.05em 0 0 rgba(255, 0, 85, 0.75),
+    -0.05em -0.025em 0 rgba(0, 229, 255, 0.75),
+    0.025em 0.05em 0 rgba(255, 230, 0, 0.75);
+  animation: glitch 0.3s infinite;
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
 }
