@@ -10,17 +10,19 @@ type DashboardTab = 'overview' | 'draft' | 'arena';
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('draft');
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const loadAppData = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // 1. Fetch user session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error('Auth error:', error);
+        if (sessionError) {
+          console.error('Auth error:', sessionError);
           router.push('/login');
           return;
         }
@@ -31,6 +33,27 @@ export default function Dashboard() {
         }
 
         setUser(session.user);
+
+        // 2. Fetch user profile data (needed for Draft Arena)
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Profile fetch error:', profileError);
+            // Continue anyway - profile might not exist yet
+          } else {
+            setProfile(profileData || {});
+          }
+        } catch (profileErr) {
+          console.error('Failed to fetch profile:', profileErr);
+          // Continue with empty profile - user can still access draft
+          setProfile({});
+        }
+
       } catch (error) {
         console.error('Auth check failed:', error);
         router.push('/login');
@@ -39,7 +62,7 @@ export default function Dashboard() {
       }
     };
 
-    checkAuth();
+    loadAppData();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -60,12 +83,13 @@ export default function Dashboard() {
     router.push('/');
   };
 
-  if (loading || !user) {
+  // GLOBAL LOADING STATE - Prevent ANY rendering until all required data is loaded
+  if (loading || !user || profile === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cyber-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-electric-yellow mx-auto mb-4"></div>
-          <p className="text-gray-400 font-mono">Loading Cyber-Grid...</p>
+          <p className="text-gray-400 font-mono">Authenticating and Loading Arena...</p>
         </div>
       </div>
     );
