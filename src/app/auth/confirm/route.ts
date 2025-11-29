@@ -8,7 +8,9 @@ export async function GET(request: NextRequest) {
   const type = requestUrl.searchParams.get('type')
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-  if (token_hash && type) {
+  console.log('Magic link params:', { token_hash, type, next }) // DEBUG LOG
+
+  if (token_hash && type === 'magiclink') {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,9 +26,11 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
 
-    if (!error) {
+    console.log('Verify OTP result:', { error: error?.message, session: !!data.session }) // DEBUG LOG
+
+    if (!error && data.session) {
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
   }
