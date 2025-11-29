@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-tz';
+import { utcToZonedTime, format } from 'date-fns-tz';
 
 export interface ChromeWarTimerState {
   nextDropTime: Date | null;
@@ -42,7 +42,7 @@ export const getNextDropTime = (currentDate: Date): Date | null => {
 
       // If the current time is before the drop time, this is the one.
       if (dropTime.getTime() > nowET.getTime()) {
-        return zonedTimeToUtc(dropTime, TIME_ZONE);
+        return dropTime;
       }
     }
   }
@@ -70,7 +70,7 @@ export const getWeekEndTime = (currentDate: Date): Date => {
     date.setDate(date.getDate() + 7);
   }
 
-  return zonedTimeToUtc(date, TIME_ZONE);
+  return date;
 };
 
 // Calculate DROP number (1=Tue, 2=Wed, 3=Thu)
