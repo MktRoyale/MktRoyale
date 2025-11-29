@@ -277,7 +277,7 @@ export const getCurrentGameStatus = (options?: {
   if (forcePhase) {
     switch (forcePhase) {
       case 'DRAFT_OPEN':
-        const draftCloseTime = getDraftCloseTime(now, draftCloseDay, draftCloseHour, draftCloseMinute);
+        const draftCloseTime = getDraftCloseTime(now);
         return {
           phase: 'DRAFT_OPEN',
           targetTime: draftCloseTime,
