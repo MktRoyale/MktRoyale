@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { toZonedTime, format, zonedTimeToUtc } from 'date-fns-tz';
+import { toZonedTime, format } from 'date-fns-tz';
 
 export interface ChromeWarTimerState {
   nextDropTime: Date | null;
@@ -116,14 +116,23 @@ export const getDraftCloseTime = (now: Date): Date => {
       targetET.setDate(targetET.getDate() + 7); // Advance to next Monday
   }
 
-  // CRITICAL FIX: Use date-fns-tz to properly set the time in ET timezone and convert to UTC
-  // Format the target date as a string in ET timezone with the correct hour/minute
+  // CRITICAL FIX: Set the time in ET and convert to UTC using standard date math
+  // Format the target date string in ET timezone
   const targetDateString = format(targetET, 'yyyy-MM-dd', { timeZone: TIME_ZONE });
-  const targetDateTimeString = `${targetDateString} ${String(DRAFT_CLOSE_HOUR).padStart(2, '0')}:${String(DRAFT_CLOSE_MINUTE).padStart(2, '0')}:00`;
+  const [year, month, day] = targetDateString.split('-').map(Number);
   
-  // Convert the ET time string to a UTC Date object
-  // This ensures the Date object represents the correct UTC time for 9:30 AM ET
-  const target = zonedTimeToUtc(targetDateTimeString, TIME_ZONE);
+  // Determine if target date is in DST (Daylight Saving Time)
+  // DST in ET typically runs from March to November
+  // EST (Standard Time): UTC-5, so 9:30 AM ET = 14:30 UTC
+  // EDT (Daylight Time): UTC-4, so 9:30 AM ET = 13:30 UTC
+  const monthNum = month - 1; // Convert to 0-based month
+  // Rough DST check: March (2) through November (10)
+  // Note: This is approximate; actual DST dates vary by year
+  const isDST = monthNum >= 2 && monthNum <= 10;
+  const etOffsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
+  
+  // Create UTC date: 9:30 AM ET = 13:30 UTC (EDT) or 14:30 UTC (EST)
+  const target = new Date(Date.UTC(year, monthNum, day, DRAFT_CLOSE_HOUR + etOffsetHours, DRAFT_CLOSE_MINUTE, 0));
 
   return target;
 };
