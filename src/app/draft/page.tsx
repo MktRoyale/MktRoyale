@@ -54,20 +54,33 @@ export default function Draft() {
   const [user, setUser] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Auth error:', error);
+          setError('Authentication failed. Please log in again.');
+          return;
+        }
+        setUser(user);
+      } catch (err) {
+        console.error('Failed to get user:', err);
+        setError('Failed to load user data. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
     };
     getUser();
-  }, [supabase]);
+  }, []);
 
   // Debounced lineup saving
   const saveLineupToDatabase = useCallback(
     debounce(async (lineup: (typeof MOCK_STOCKS[0] | null)[]) => {
-      if (!user) return;
+      if (!user?.id) return;
 
       const lineupSymbols = lineup.map(stock => stock?.symbol || null).filter(Boolean);
 
@@ -80,39 +93,45 @@ export default function Draft() {
         console.error('Failed to save draft lineup:', error);
       }
     }, 500),
-    [user]
+    [user?.id]
   );
 
   // Load lineup on mount
   useEffect(() => {
     const loadDraftLineup = async () => {
-      if (!user) return;
+      if (!user?.id) return;
 
-      const { data, error } = await supabase
-        .from('users')
-        .select('draft_lineup')
-        .eq('id', user.id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('draft_lineup')
+          .eq('id', user.id)
+          .single();
 
-      if (data?.draft_lineup && Array.isArray(data.draft_lineup)) {
-        // Convert symbols back to stock objects
-        const loadedStocks = data.draft_lineup.map((symbol: string) =>
-          MOCK_STOCKS.find(stock => stock.symbol === symbol) || null
-        );
-        // Pad with nulls to maintain 5-slot structure
-        while (loadedStocks.length < TOTAL_SLOTS) {
-          loadedStocks.push(null);
+        if (data?.draft_lineup && Array.isArray(data.draft_lineup)) {
+          // Convert symbols back to stock objects
+          const loadedStocks = data.draft_lineup.map((symbol: string) =>
+            MOCK_STOCKS.find(stock => stock.symbol === symbol) || null
+          );
+          // Pad with nulls to maintain 5-slot structure
+          while (loadedStocks.length < TOTAL_SLOTS) {
+            loadedStocks.push(null);
+          }
+          setSelectedStocks(loadedStocks);
         }
-        setSelectedStocks(loadedStocks);
-      }
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Failed to load draft lineup:', error);
+        if (error && error.code !== 'PGRST116') {
+          console.error('Failed to load draft lineup:', error);
+          setError('Failed to load your draft lineup. Please refresh the page.');
+        }
+      } catch (err) {
+        console.error('Failed to load draft lineup:', err);
+        setError('Failed to load your draft lineup. Please refresh the page.');
       }
     };
 
     loadDraftLineup();
-  }, [user]);
+  }, [user?.id]);
 
   // Auto-save lineup changes
   useEffect(() => {
@@ -191,7 +210,10 @@ export default function Draft() {
   };
 
   const submitLineup = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      setError("Authentication required. Please log in again.");
+      return;
+    }
 
     const lineupHash = generateLineupHash(selectedStocks);
     if (!lineupHash) {
@@ -239,6 +261,58 @@ export default function Draft() {
   const coreCount = selectedStocks.slice(0, CORE_SLOTS).filter(Boolean).length;
   const canSubmit = coreCount === CORE_SLOTS;
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cyber-black">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-electric-yellow mx-auto mb-4"></div>
+          <p className="text-gray-400 font-mono">Loading Draft Arena...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cyber-black">
+        <div className="text-center">
+          <div className="bg-danger-red/10 border border-danger-red/30 rounded-lg p-8 max-w-md">
+            <h2 className="text-xl font-bold text-danger-red mb-4">Draft Arena Error</h2>
+            <p className="text-gray-300 mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-electric-yellow text-cyber-black rounded-lg font-bold hover:bg-electric-yellow/90 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No user state
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cyber-black">
+        <div className="text-center">
+          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-8 max-w-md">
+            <h2 className="text-xl font-bold text-electric-yellow mb-4">Authentication Required</h2>
+            <p className="text-gray-300 mb-6">Please log in to access the Draft Arena.</p>
+            <a
+              href="/login"
+              className="inline-block px-6 py-3 bg-electric-yellow text-cyber-black rounded-lg font-bold hover:bg-electric-yellow/90 transition-colors"
+            >
+              Go to Login
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
@@ -285,8 +359,8 @@ export default function Draft() {
                     ×
                   </button>
                   <img
-                    src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
-                    alt={`${stock.symbol} logo`}
+                    src={`https://logo.clearbit.com/${stock?.symbol?.toLowerCase()}.com`}
+                    alt={`${stock?.symbol || 'Stock'} logo`}
                     className="w-8 h-8 rounded object-contain mb-2"
                     onError={(e) => {
                       // Fallback to a generic stock icon if logo fails to load
@@ -425,8 +499,8 @@ export default function Draft() {
 
                       <div className="flex items-center gap-2">
                         <img
-                          src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
-                          alt={`${stock.symbol} logo`}
+                          src={`https://logo.clearbit.com/${stock?.symbol?.toLowerCase()}.com`}
+                          alt={`${stock?.symbol || 'Stock'} logo`}
                           className="w-6 h-6 rounded object-contain"
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxMiIgeT0iMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
