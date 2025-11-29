@@ -71,6 +71,33 @@ button:hover {
   transform: translateY(-1px);
 }
 
+/* Cyber Button for Landing Page */
+.cyber-button {
+  background-color: var(--electric-yellow);
+  color: var(--cyber-black);
+  font-family: 'Orbitron', sans-serif;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 0 20px var(--electric-yellow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+.cyber-button:hover {
+  background-color: #FFFA80;
+  box-shadow: 0 0 30px var(--electric-yellow);
+  transform: translateY(-2px) scale(1.05);
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 20px var(--electric-yellow); }
+  100% { box-shadow: 0 0 30px var(--electric-yellow), 0 0 40px var(--electric-yellow); }
+}
+
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

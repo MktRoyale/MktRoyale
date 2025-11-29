@@ -12,6 +12,11 @@ export default function NavBar() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
 
+  // Don't show navigation on landing page
+  if (pathname === '/') {
+    return null
+  }
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {

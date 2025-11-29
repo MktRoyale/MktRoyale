@@ -1,46 +1,66 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
+import MktRoyaleTitle from "@/components/MktRoyaleTitle";
+import { useGamePhase } from "@/hooks/useGamePhase";
 
 export default function Home() {
+  const router = useRouter();
+  const { phase, countdown, description, showEnterButton } = useGamePhase();
+
+  const handleEnterArena = () => {
+    if (showEnterButton) {
+      router.push('/draft');
+    }
+  };
+
   return (
-    <div className="text-center max-w-4xl mx-auto">
-      <div className="mb-12">
-        <h1 className="text-6xl font-bold text-electric-yellow mb-6">
-          Chrome War
-        </h1>
-        <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-          Enter the ultimate stock market battle royale. Draft your chrome lineup,
-          hack your rivals with cyber abilities, and claim victory in this high-stakes
-          financial showdown.
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      {/* Branded Title */}
+      <MktRoyaleTitle />
+
+      {/* Dynamic Status Display */}
+      <div className="text-center mb-12">
+        <p
+          className="text-xl md:text-2xl font-medium mb-6"
+          style={{
+            color: 'var(--off-white-text)',
+            fontFamily: 'Roboto Mono, monospace'
+          }}
+        >
+          {description}{' '}
+          <span
+            style={{
+              color: phase === 'DRAFT_OPEN' ? 'var(--electric-yellow)' : 'var(--neon-teal)'
+            }}
+          >
+            {countdown}
+          </span>
         </p>
+
+        {/* Enter Arena Button - Only show during draft phase */}
+        {showEnterButton && (
+          <button
+            onClick={handleEnterArena}
+            className="cyber-button text-xl px-12 py-6"
+          >
+            Enter Arena
+          </button>
+        )}
       </div>
 
-      <div className="bg-neon-teal/10 border border-neon-teal/30 rounded-lg p-8 mb-8">
-        <h2 className="text-2xl font-semibold text-neon-teal mb-4">
-          Chrome War Arena
-        </h2>
-        <p className="text-gray-300 mb-6">
-          Draft your 4-core + 1-wildcard lineup, battle rivals with cyber abilities,
-          and survive the culling to claim victory.
+      {/* Subtle footer text */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+        <p
+          className="text-sm opacity-60"
+          style={{
+            color: 'var(--off-white-text)',
+            fontFamily: 'Roboto Mono, monospace'
+          }}
+        >
+          Battle Royale for Stock Traders
         </p>
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
-          <div>
-            <p>⚡ Abilities: Overclock, Short Circuit, Ghost Shield</p>
-            <p>🎯 Rivals: 2-day locks, Friday deathmatch</p>
-          </div>
-          <div>
-            <p>💰 Prize Pool: $15,000+</p>
-            <p>👥 2,500+ Chrome Warriors</p>
-            <p>🔥 Volatility: Uncapped</p>
-          </div>
-        </div>
       </div>
-
-      <Link
-        href="/draft"
-        className="inline-block bg-electric-yellow text-cyber-black px-8 py-4 rounded-lg font-bold text-lg hover:bg-electric-yellow/90 transition-colors"
-      >
-        Enter Chrome War Arena
-      </Link>
     </div>
   );
 }
