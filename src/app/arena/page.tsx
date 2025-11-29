@@ -4,6 +4,14 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { ABILITIES, RIVAL_BONUSES, GAME_PHASES } from "@/lib/constants";
 
+const abilityDescriptions: Record<string, string> = {
+  'overclock': ABILITIES.OVERCLOCK.description,
+  'short-circuit': ABILITIES.SHORT_CIRCUIT.description,
+  'ghost-shield': ABILITIES.GHOST_SHIELD.description,
+  'mirror-hack': ABILITIES.MIRROR_HACK.description,
+  'null-surge': ABILITIES.NULL_SURGE.description,
+}
+
 interface Ability {
   id: string;
   name: string;
@@ -274,7 +282,7 @@ export default function Arena() {
                   <div className="font-bold text-white mb-1">{ability.name}</div>
 
                   <div className="text-sm text-gray-400 mb-3 h-8">
-                    {ABILITIES[ability.id.toUpperCase().replace('-', '_')]?.description}
+                    {abilityDescriptions[ability.id]}
                   </div>
 
                   <div className="flex items-center justify-between mb-2">
