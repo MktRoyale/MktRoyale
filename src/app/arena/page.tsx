@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { ABILITIES, RIVAL_BONUSES, GAME_PHASES } from "@/lib/constants";
 
 interface Ability {
@@ -118,7 +118,6 @@ export default function Arena() {
     rivalBonus: 0
   });
 
-  const supabase = createClient();
 
   // Update timers every second
   useEffect(() => {

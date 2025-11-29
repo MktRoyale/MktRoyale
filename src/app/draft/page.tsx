@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { CORE_SLOTS, WILDCARD_SLOTS, TOTAL_SLOTS, ABILITIES } from "@/lib/constants";
 import Link from "next/link";
 
@@ -43,7 +43,6 @@ export default function Draft() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {

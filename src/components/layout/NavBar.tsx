@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { supabase } from "@/lib/supabaseClient"   // ← changed
+import { supabase } from "@/lib/supabase"
 import { useEffect, useState } from "react"
 import { User } from "@supabase/supabase-js"
 import { ELECTRIC_YELLOW, NEON_TEAL } from "@/lib/constants"
