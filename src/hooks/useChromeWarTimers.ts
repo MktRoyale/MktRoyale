@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { utcToZonedTime, format } from 'date-fns-tz';
+import { toZonedTime, format } from 'date-fns-tz';
 
 export interface ChromeWarTimerState {
   nextDropTime: Date | null;
@@ -21,12 +21,12 @@ const MARKET_CLOSE_MINUTE = 0;
 // Helper function to get current ET time
 const getCurrentETTime = (): Date => {
   const now = new Date();
-  return utcToZonedTime(now, TIME_ZONE);
+  return toZonedTime(now, TIME_ZONE);
 };
 
 // Calculate next DROP time (Tuesday, Wednesday, Thursday at 4:00 PM ET)
 export const getNextDropTime = (currentDate: Date): Date | null => {
-  const nowET = utcToZonedTime(currentDate, TIME_ZONE);
+  const nowET = toZonedTime(currentDate, TIME_ZONE);
   const dayOfWeek = nowET.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
   // Drop days are Tue (2), Wed (3), Thu (4)
@@ -52,7 +52,7 @@ export const getNextDropTime = (currentDate: Date): Date | null => {
 
 // Calculate week end time (next Friday at 4:00 PM ET)
 export const getWeekEndTime = (currentDate: Date): Date => {
-  const nowET = utcToZonedTime(currentDate, TIME_ZONE);
+  const nowET = toZonedTime(currentDate, TIME_ZONE);
   let date = new Date(nowET);
   const day = date.getDay(); // 0=Sun, 5=Fri
 
