@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { toZonedTime, format } from 'date-fns-tz';
+import { toZonedTime, format, zonedTimeToUtc } from 'date-fns-tz';
 
 export interface ChromeWarTimerState {
   nextDropTime: Date | null;
@@ -97,15 +97,15 @@ export const getNextDraftOpenTime = (currentDate: Date): Date => {
 export const getDraftCloseTime = (now: Date): Date => {
   // Convert the current UTC time to the target time zone (ET)
   let nowET = toZonedTime(now, TIME_ZONE);
-  let target = new Date(nowET); // Start building the target from the current time in ET
 
   // Calculate days until the next Monday (where Monday is day 1, Sunday is day 0)
   const day = nowET.getDay();
   // (1 + 7 - day) % 7 calculates days to next Monday, handling wrap-around.
   const daysToAdd = (1 + 7 - day) % 7;
 
-  target.setDate(nowET.getDate() + daysToAdd);
-  target.setHours(DRAFT_CLOSE_HOUR, DRAFT_CLOSE_MINUTE, 0, 0);
+  // Calculate the target date in ET
+  let targetET = new Date(nowET);
+  targetET.setDate(nowET.getDate() + daysToAdd);
 
   // CRITICAL EDGE CASE: If the calculated target is TODAY (Monday) and the current time is ALREADY past 9:30 AM ET, target the following Monday.
   const isTodayMonday = nowET.getDay() === 1;
@@ -113,10 +113,18 @@ export const getDraftCloseTime = (now: Date): Date => {
                           (nowET.getHours() === DRAFT_CLOSE_HOUR && nowET.getMinutes() >= DRAFT_CLOSE_MINUTE);
 
   if (isTodayMonday && isPastCloseTime) {
-      target.setDate(target.getDate() + 7); // Advance to next Monday
+      targetET.setDate(targetET.getDate() + 7); // Advance to next Monday
   }
 
-  // Convert the calculated local time (target) back to a standard JavaScript Date object for reliable countdown math.
+  // CRITICAL FIX: Use date-fns-tz to properly set the time in ET timezone and convert to UTC
+  // Format the target date as a string in ET timezone with the correct hour/minute
+  const targetDateString = format(targetET, 'yyyy-MM-dd', { timeZone: TIME_ZONE });
+  const targetDateTimeString = `${targetDateString} ${String(DRAFT_CLOSE_HOUR).padStart(2, '0')}:${String(DRAFT_CLOSE_MINUTE).padStart(2, '0')}:00`;
+  
+  // Convert the ET time string to a UTC Date object
+  // This ensures the Date object represents the correct UTC time for 9:30 AM ET
+  const target = zonedTimeToUtc(targetDateTimeString, TIME_ZONE);
+
   return target;
 };
 

@@ -18,35 +18,80 @@ export default function Dashboard() {
   useEffect(() => {
     const loadAppData = async () => {
       try {
-        // 1. Fetch user session
+        // 1. Fetch user session with aggressive null checking
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
+        // AGGRESSIVE ERROR GUARDING: Check for any session errors
         if (sessionError) {
           console.error('Auth error:', sessionError);
-          router.push('/login');
+          try {
+            router.push('/login');
+          } catch (routerError) {
+            console.error('Router error during redirect:', routerError);
+            // Fallback: window.location if router fails
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+          }
           return;
         }
 
-        if (!session?.user) {
-          router.push('/login');
+        // AGGRESSIVE ERROR GUARDING: Validate session and user object
+        if (!session || !session.user || !session.user.id) {
+          console.error('Invalid session or user data');
+          try {
+            router.push('/login');
+          } catch (routerError) {
+            console.error('Router error during redirect:', routerError);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+          }
           return;
         }
 
-        setUser(session.user);
+        // AGGRESSIVE ERROR GUARDING: Ensure user object is valid before setting
+        if (session.user && typeof session.user === 'object') {
+          setUser(session.user);
+        } else {
+          console.error('Invalid user object structure');
+          try {
+            router.push('/login');
+          } catch (routerError) {
+            console.error('Router error during redirect:', routerError);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+          }
+          return;
+        }
 
-        // 2. Fetch user profile data (needed for Draft Arena)
+        // 2. Fetch user profile data (needed for Draft Arena) with aggressive error guarding
         try {
+          // AGGRESSIVE ERROR GUARDING: Validate user ID exists before query
+          if (!session.user.id || typeof session.user.id !== 'string') {
+            console.error('Invalid user ID for profile fetch');
+            setProfile({});
+            return;
+          }
+
           const { data: profileData, error: profileError } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single();
 
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Profile fetch error:', profileError);
+          // AGGRESSIVE ERROR GUARDING: Handle profile errors gracefully
+          if (profileError) {
+            // PGRST116 is "not found" - this is acceptable for new users
+            if (profileError.code !== 'PGRST116') {
+              console.error('Profile fetch error:', profileError);
+            }
             // Continue anyway - profile might not exist yet
+            setProfile({});
           } else {
-            setProfile(profileData || {});
+            // AGGRESSIVE ERROR GUARDING: Ensure profileData is valid
+            setProfile(profileData && typeof profileData === 'object' ? profileData : {});
           }
         } catch (profileErr) {
           console.error('Failed to fetch profile:', profileErr);
@@ -55,8 +100,16 @@ export default function Dashboard() {
         }
 
       } catch (error) {
+        // AGGRESSIVE ERROR GUARDING: Catch-all for any unexpected errors
         console.error('Auth check failed:', error);
-        router.push('/login');
+        try {
+          router.push('/login');
+        } catch (routerError) {
+          console.error('Router error during error redirect:', routerError);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -64,27 +117,78 @@ export default function Dashboard() {
 
     loadAppData();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          router.push('/login');
-        } else if (session?.user) {
-          setUser(session.user);
+    // Listen for auth changes with aggressive error guarding
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          try {
+            if (event === 'SIGNED_OUT' || !session) {
+              try {
+                router.push('/login');
+              } catch (routerError) {
+                console.error('Router error in auth state change:', routerError);
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/login';
+                }
+              }
+            } else if (session?.user && typeof session.user === 'object') {
+              setUser(session.user);
+            }
+          } catch (stateChangeError) {
+            console.error('Error in auth state change handler:', stateChangeError);
+          }
         }
-      }
-    );
+      );
 
-    return () => subscription.unsubscribe();
+      // AGGRESSIVE ERROR GUARDING: Ensure subscription exists before returning cleanup
+      if (subscription) {
+        return () => {
+          try {
+            subscription.unsubscribe();
+          } catch (unsubError) {
+            console.error('Error unsubscribing from auth:', unsubError);
+          }
+        };
+      }
+    } catch (subscriptionError) {
+      console.error('Error setting up auth subscription:', subscriptionError);
+    }
   }, [router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
+    try {
+      // AGGRESSIVE ERROR GUARDING: Handle logout errors gracefully
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        // Continue with redirect even if signOut fails
+      }
+      
+      try {
+        router.push('/');
+      } catch (routerError) {
+        console.error('Router error during logout:', routerError);
+        // Fallback: window.location if router fails
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
+    } catch (logoutError) {
+      console.error('Unexpected error during logout:', logoutError);
+      // Still attempt redirect
+      try {
+        router.push('/');
+      } catch (routerError) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
+    }
   };
 
   // GLOBAL LOADING STATE - Prevent ANY rendering until all required data is loaded
-  if (loading || !user || profile === null) {
+  // AGGRESSIVE ERROR GUARDING: Comprehensive null/undefined checks
+  if (loading || !user || profile === null || typeof user !== 'object' || !user.id) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cyber-black">
         <div className="text-center">
@@ -108,7 +212,7 @@ export default function Dashboard() {
           Chrome War Command Center
         </h1>
         <p className="text-gray-300 mt-2">
-          Welcome back, Commander {user.email?.split('@')[0] || 'Warrior'}
+          Welcome back, Commander {user?.email && typeof user.email === 'string' ? user.email.split('@')[0] : 'Warrior'}
         </p>
         <div className="mt-4">
           <p
@@ -174,7 +278,16 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <button
-              onClick={() => router.push('/draft')}
+              onClick={() => {
+                try {
+                  router.push('/draft');
+                } catch (error) {
+                  console.error('Error navigating to draft:', error);
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/draft';
+                  }
+                }
+              }}
               className="w-full px-4 py-2 rounded-lg font-medium transition-colors"
               style={{
                 backgroundColor: ELECTRIC_YELLOW,
@@ -207,7 +320,16 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <button
-              onClick={() => router.push('/arena')}
+              onClick={() => {
+                try {
+                  router.push('/arena');
+                } catch (error) {
+                  console.error('Error navigating to arena:', error);
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/arena';
+                  }
+                }
+              }}
               className="w-full px-4 py-2 rounded-lg font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
             >
               Enter Battle Arena
@@ -236,7 +358,16 @@ export default function Dashboard() {
           </div>
           <div className="mt-4">
             <button
-              onClick={() => router.push('/profile')}
+              onClick={() => {
+                try {
+                  router.push('/profile');
+                } catch (error) {
+                  console.error('Error navigating to profile:', error);
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/profile';
+                  }
+                }
+              }}
               className="w-full px-4 py-2 rounded-lg font-medium transition-colors bg-gray-700 text-gray-300 hover:bg-gray-600"
             >
               View Full Profile
@@ -252,7 +383,16 @@ export default function Dashboard() {
             <h3 className="text-2xl font-bold text-electric-yellow mb-4">Draft Arena</h3>
             <p className="text-gray-300 mb-6">Build your chrome lineup for the upcoming battle</p>
             <button
-              onClick={() => router.push('/draft')}
+              onClick={() => {
+                try {
+                  router.push('/draft');
+                } catch (error) {
+                  console.error('Error navigating to draft:', error);
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/draft';
+                  }
+                }
+              }}
               className="px-6 py-3 bg-electric-yellow text-cyber-black rounded-lg font-bold hover:bg-electric-yellow/90 transition-colors"
             >
               Enter Draft Arena
@@ -267,7 +407,16 @@ export default function Dashboard() {
             <h3 className="text-2xl font-bold text-neon-teal mb-4">Battle Arena</h3>
             <p className="text-gray-300 mb-6">Deploy abilities, hack rivals, and claim victory</p>
             <button
-              onClick={() => router.push('/arena')}
+              onClick={() => {
+                try {
+                  router.push('/arena');
+                } catch (error) {
+                  console.error('Error navigating to arena:', error);
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/arena';
+                  }
+                }
+              }}
               className="px-6 py-3 bg-neon-teal text-cyber-black rounded-lg font-bold hover:bg-neon-teal/90 transition-colors"
             >
               Enter Battle Arena
