@@ -1,9 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { CORE_SLOTS, WILDCARD_SLOTS, TOTAL_SLOTS, ABILITIES } from "@/lib/constants";
 import Link from "next/link";
+
+// Simple debounce utility
+function debounce<T extends (...args: any[]) => any>(func: T, delay: number): T & { cancel: () => void } {
+  let timeoutId: NodeJS.Timeout;
+  const debounced = ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  }) as T & { cancel: () => void };
+
+  debounced.cancel = () => clearTimeout(timeoutId);
+  return debounced;
+}
 
 // Mock stock data with market data
 const MOCK_STOCKS = [
@@ -51,6 +63,67 @@ export default function Draft() {
     };
     getUser();
   }, [supabase]);
+
+  // Debounced lineup saving
+  const saveLineupToDatabase = useCallback(
+    debounce(async (lineup: (typeof MOCK_STOCKS[0] | null)[]) => {
+      if (!user) return;
+
+      const lineupSymbols = lineup.map(stock => stock?.symbol || null).filter(Boolean);
+
+      const { error } = await supabase
+        .from('users')
+        .update({ draft_lineup: lineupSymbols })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Failed to save draft lineup:', error);
+      }
+    }, 500),
+    [user]
+  );
+
+  // Load lineup on mount
+  useEffect(() => {
+    const loadDraftLineup = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('draft_lineup')
+        .eq('id', user.id)
+        .single();
+
+      if (data?.draft_lineup && Array.isArray(data.draft_lineup)) {
+        // Convert symbols back to stock objects
+        const loadedStocks = data.draft_lineup.map((symbol: string) =>
+          MOCK_STOCKS.find(stock => stock.symbol === symbol) || null
+        );
+        // Pad with nulls to maintain 5-slot structure
+        while (loadedStocks.length < TOTAL_SLOTS) {
+          loadedStocks.push(null);
+        }
+        setSelectedStocks(loadedStocks);
+      }
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Failed to load draft lineup:', error);
+      }
+    };
+
+    loadDraftLineup();
+  }, [user]);
+
+  // Auto-save lineup changes
+  useEffect(() => {
+    if (user && selectedStocks.length > 0) {
+      saveLineupToDatabase(selectedStocks);
+    }
+
+    return () => {
+      saveLineupToDatabase.cancel();
+    };
+  }, [selectedStocks, user, saveLineupToDatabase]);
 
   // Generate lineup hash from first 4 stocks only
   const generateLineupHash = (stocks: (typeof MOCK_STOCKS[0] | null)[]) => {
@@ -101,6 +174,12 @@ export default function Draft() {
     const newStocks = [...selectedStocks];
     newStocks[emptySlotIndex] = stock;
     setSelectedStocks(newStocks);
+  };
+
+  const handleRemoveStock = (symbolToRemove: string) => {
+    setSelectedStocks(prevStocks =>
+      prevStocks.map(stock => stock?.symbol === symbolToRemove ? null : stock)
+    );
   };
 
   const toggleFavorite = (symbol: string) => {
