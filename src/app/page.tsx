@@ -48,19 +48,6 @@ export default function Home() {
           </button>
         )}
       </div>
-
-      {/* Subtle footer text */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-        <p
-          className="text-sm opacity-60"
-          style={{
-            color: 'var(--off-white-text)',
-            fontFamily: 'Roboto Mono, monospace'
-          }}
-        >
-          Battle Royale for Stock Traders
-        </p>
-      </div>
     </div>
   );
 }
