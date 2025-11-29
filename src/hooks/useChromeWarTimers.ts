@@ -119,7 +119,7 @@ export const getDraftCloseTime = (now: Date): Date => {
   // CRITICAL FIX: Set the time in ET and convert to UTC using standard date math
   // Format the target date string in ET timezone
   const targetDateString = format(targetET, 'yyyy-MM-dd', { timeZone: TIME_ZONE });
-  const [year, month, day] = targetDateString.split('-').map(Number);
+  const [year, month, targetDayNum] = targetDateString.split('-').map(Number);
   
   // Determine if target date is in DST (Daylight Saving Time)
   // DST in ET typically runs from March to November
@@ -132,7 +132,7 @@ export const getDraftCloseTime = (now: Date): Date => {
   const etOffsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
   
   // Create UTC date: 9:30 AM ET = 13:30 UTC (EDT) or 14:30 UTC (EST)
-  const target = new Date(Date.UTC(year, monthNum, day, DRAFT_CLOSE_HOUR + etOffsetHours, DRAFT_CLOSE_MINUTE, 0));
+  const target = new Date(Date.UTC(year, monthNum, targetDayNum, DRAFT_CLOSE_HOUR + etOffsetHours, DRAFT_CLOSE_MINUTE, 0));
 
   return target;
 };
