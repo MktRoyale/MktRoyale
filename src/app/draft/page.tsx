@@ -304,7 +304,7 @@ export default function Draft() {
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {isSubmitting ? 'Deploying Chrome...' : 'Lock Chrome Lineup'}
+            {isSubmitting ? 'Deploying Chrome...' : 'Execute'}
           </button>
         </div>
 

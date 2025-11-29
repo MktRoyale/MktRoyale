@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-tz';
 
 export interface ChromeWarTimerState {
   nextDropTime: Date | null;
@@ -19,56 +20,57 @@ const MARKET_CLOSE_MINUTE = 0;
 
 // Helper function to get current ET time
 const getCurrentETTime = (): Date => {
-  // For simplicity, we'll work with local time assuming the server is in ET
-  // In production, you'd want to use a proper timezone library
-  return new Date();
+  const now = new Date();
+  return utcToZonedTime(now, TIME_ZONE);
 };
 
 // Calculate next DROP time (Tuesday, Wednesday, Thursday at 4:00 PM ET)
 export const getNextDropTime = (currentDate: Date): Date | null => {
-  const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  const nowET = utcToZonedTime(currentDate, TIME_ZONE);
+  const dayOfWeek = nowET.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 
-  // No DROP on Mon, Fri, Sat, Sun
-  if (dayOfWeek === 1 || dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
-    return null;
-  }
+  // Drop days are Tue (2), Wed (3), Thu (4)
+  for (let i = 0; i <= 3; i++) {
+    const checkDate = new Date(nowET);
+    checkDate.setDate(nowET.getDate() + i);
+    const checkDay = checkDate.getDay();
 
-  // Calculate today's 4:00 PM ET
-  let dropTime = new Date(currentDate);
-  dropTime.setHours(MARKET_CLOSE_HOUR, MARKET_CLOSE_MINUTE, 0, 0);
+    if (checkDay >= 2 && checkDay <= 4) {
+      // Found a possible drop day
+      let dropTime = new Date(checkDate);
+      dropTime.setHours(MARKET_CLOSE_HOUR, MARKET_CLOSE_MINUTE, 0, 0);
 
-  // If current time is past today's 4:00 PM ET, check if tomorrow is a valid DROP day
-  if (currentDate.getTime() > dropTime.getTime()) {
-    dropTime.setDate(dropTime.getDate() + 1); // Move to next day
-    const nextDay = dropTime.getDay();
-
-    // Check if next day is Tue, Wed, or Thu
-    if (nextDay === 2 || nextDay === 3 || nextDay === 4) {
-      return dropTime; // Next drop is tomorrow at 4 PM ET
+      // If the current time is before the drop time, this is the one.
+      if (dropTime.getTime() > nowET.getTime()) {
+        return zonedTimeToUtc(dropTime, TIME_ZONE);
+      }
     }
-  } else {
-    // Drop is today at 4 PM ET
-    return dropTime;
   }
 
-  return null; // All drops finished for the week
+  return null; // All drops completed for the current week
 };
 
 // Calculate week end time (next Friday at 4:00 PM ET)
 export const getWeekEndTime = (currentDate: Date): Date => {
-  let date = new Date(currentDate);
-  const day = date.getDay();
-  const diff = (day <= 5) ? 5 - day : 7 + 5 - day; // Days until next Friday
+  const nowET = utcToZonedTime(currentDate, TIME_ZONE);
+  let date = new Date(nowET);
+  const day = date.getDay(); // 0=Sun, 5=Fri
+
+  // Calculate days until next Friday
+  let diff = 5 - day;
+  if (day > 5) { // If it's Saturday or Sunday
+    diff = 7 + 5 - day;
+  }
 
   date.setDate(date.getDate() + diff);
   date.setHours(MARKET_CLOSE_HOUR, MARKET_CLOSE_MINUTE, 0, 0);
 
-  // If it's Friday and past 4 PM ET, move to next Friday
-  if (day === 5 && currentDate.getTime() > date.getTime()) {
+  // If it's currently Friday and past 4 PM ET, move to next Friday
+  if (day === 5 && nowET.getTime() > date.getTime()) {
     date.setDate(date.getDate() + 7);
   }
 
-  return date;
+  return zonedTimeToUtc(date, TIME_ZONE);
 };
 
 // Calculate DROP number (1=Tue, 2=Wed, 3=Thu)
