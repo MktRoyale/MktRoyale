@@ -2,11 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import MktRoyaleTitle from "@/components/MktRoyaleTitle";
-import { useGamePhase } from "@/hooks/useGamePhase";
+import { getCurrentGameStatus } from "@/hooks/useChromeWarTimers";
 
 export default function Home() {
   const router = useRouter();
-  const { phase, countdown, description, showEnterButton } = useGamePhase();
+
+  // FORCE DRAFT STATE for landing page testing
+  const { displayTag, targetTime, showEnterButton, countdown } = getCurrentGameStatus({
+    forcePhase: 'DRAFT_OPEN',
+    draftCloseDay: 1,
+    draftCloseHour: 9,
+    draftCloseMinute: 30
+  });
 
   const handleEnterArena = () => {
     if (showEnterButton) {
@@ -28,10 +35,11 @@ export default function Home() {
             fontFamily: 'Roboto Mono, monospace'
           }}
         >
-          {description}{' '}
+          {displayTag}:{' '}
           <span
+            className="countdown-timer"
             style={{
-              color: phase === 'DRAFT_OPEN' ? 'var(--electric-yellow)' : 'var(--neon-teal)'
+              color: 'var(--electric-yellow)'
             }}
           >
             {countdown}

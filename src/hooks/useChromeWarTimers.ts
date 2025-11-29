@@ -73,6 +73,42 @@ export const getWeekEndTime = (currentDate: Date): Date => {
   return date;
 };
 
+// Calculate next draft open time (next Monday at 9:30 AM ET)
+export const getNextDraftOpenTime = (currentDate: Date): Date => {
+  const nowET = toZonedTime(currentDate, TIME_ZONE);
+  let date = new Date(nowET);
+  const day = date.getDay(); // 0=Sun, 1=Mon
+
+  // Calculate days until next Monday
+  let diff = 1 - day;
+  if (day >= 1) { // If it's Monday or later in the week
+    diff = 8 - day; // Next Monday
+  }
+
+  date.setDate(date.getDate() + diff);
+  date.setHours(9, 30, 0, 0); // 9:30 AM ET
+
+  return date;
+};
+
+// Calculate draft close time (next Monday at 9:30 AM ET or specified time)
+export const getDraftCloseTime = (currentDate: Date, draftCloseDay: number = 1, draftCloseHour: number = 9, draftCloseMinute: number = 30): Date => {
+  const nowET = toZonedTime(currentDate, TIME_ZONE);
+  let date = new Date(nowET);
+  const day = date.getDay();
+
+  // Calculate days until specified draft close day (default Monday = 1)
+  let diff = draftCloseDay - day;
+  if (day > draftCloseDay) { // If we've passed the close day this week
+    diff = 7 + draftCloseDay - day; // Next week's close day
+  }
+
+  date.setDate(date.getDate() + diff);
+  date.setHours(draftCloseHour, draftCloseMinute, 0, 0);
+
+  return date;
+};
+
 // Calculate DROP number (1=Tue, 2=Wed, 3=Thu)
 const getDropNumber = (currentDate: Date): number | null => {
   const dayOfWeek = currentDate.getDay();
@@ -186,4 +222,180 @@ export const useChromeWarTimers = (): ChromeWarTimerState => {
   }, []);
 
   return timerState;
+};
+
+// Game Status Interface
+export interface GameStatus {
+  phase: 'DRAFT_OPEN' | 'TRADING_WEEK' | 'INTERMISSION' | 'FINAL_HOUR';
+  targetTime: Date;
+  displayTag: string;
+  showEnterButton: boolean;
+  countdown: string;
+}
+
+// Calculate time difference as HH:MM:SS string
+export const calculateTimeDifference = (targetTime: Date): string => {
+  const now = new Date();
+  const diff = targetTime.getTime() - now.getTime();
+
+  if (diff <= 0) return '00:00:00';
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+// Main function to get current game status with optional force phase
+export const getCurrentGameStatus = (options?: {
+  forcePhase?: 'DRAFT_OPEN' | 'TRADING_WEEK' | 'INTERMISSION' | 'FINAL_HOUR';
+  draftCloseDay?: number;
+  draftCloseHour?: number;
+  draftCloseMinute?: number;
+  mockTime?: Date;
+}): GameStatus => {
+  const now = options?.mockTime || new Date();
+  const forcePhase = options?.forcePhase;
+  const draftCloseDay = options?.draftCloseDay ?? 1; // Monday
+  const draftCloseHour = options?.draftCloseHour ?? 9;
+  const draftCloseMinute = options?.draftCloseMinute ?? 30;
+
+  // If forced phase is specified, use that
+  if (forcePhase) {
+    switch (forcePhase) {
+      case 'DRAFT_OPEN':
+        const draftCloseTime = getDraftCloseTime(now, draftCloseDay, draftCloseHour, draftCloseMinute);
+        return {
+          phase: 'DRAFT_OPEN',
+          targetTime: draftCloseTime,
+          displayTag: 'Draft Closes In',
+          showEnterButton: true,
+          countdown: calculateTimeDifference(draftCloseTime)
+        };
+
+      case 'TRADING_WEEK':
+        const nextDropTime = getNextDropTime(now);
+        if (nextDropTime) {
+          return {
+            phase: 'TRADING_WEEK',
+            targetTime: nextDropTime,
+            displayTag: 'Players Remaining',
+            showEnterButton: false,
+            countdown: '142 players' // Mock for now
+          };
+        } else {
+          // No more drops, show week end
+          const weekEndTime = getWeekEndTime(now);
+          return {
+            phase: 'FINAL_HOUR',
+            targetTime: weekEndTime,
+            displayTag: 'Final Hour',
+            showEnterButton: false,
+            countdown: calculateTimeDifference(weekEndTime)
+          };
+        }
+
+      case 'INTERMISSION':
+        const nextDraftTime = getNextDraftOpenTime(now);
+        return {
+          phase: 'INTERMISSION',
+          targetTime: nextDraftTime,
+          displayTag: 'Next Draft Starts In',
+          showEnterButton: false,
+          countdown: calculateTimeDifference(nextDraftTime)
+        };
+
+      default:
+        break;
+    }
+  }
+
+  // Normal logic based on current time
+  const nowET = toZonedTime(now, TIME_ZONE);
+  const dayOfWeek = nowET.getDay();
+  const currentHour = nowET.getHours();
+  const currentMinute = nowET.getMinutes();
+
+  // Determine current phase based on day/time
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    // Weekend - Intermission
+    const nextDraftTime = getNextDraftOpenTime(now);
+    return {
+      phase: 'INTERMISSION',
+      targetTime: nextDraftTime,
+      displayTag: 'Next Draft Starts In',
+      showEnterButton: false,
+      countdown: calculateTimeDifference(nextDraftTime)
+    };
+  } else if (dayOfWeek >= 1 && dayOfWeek <= 4) {
+    // Monday-Thursday
+    if (dayOfWeek === 1 && currentHour < 9) {
+      // Monday before 9 AM - Draft Open
+      const draftCloseTime = getDraftCloseTime(now, 1, 9, 30);
+      return {
+        phase: 'DRAFT_OPEN',
+        targetTime: draftCloseTime,
+        displayTag: 'Draft Closes In',
+        showEnterButton: true,
+        countdown: calculateTimeDifference(draftCloseTime)
+      };
+    } else {
+      // Trading Week (Monday after 9 AM, or Tue-Thu)
+      const nextDropTime = getNextDropTime(now);
+      if (nextDropTime) {
+        return {
+          phase: 'TRADING_WEEK',
+          targetTime: nextDropTime,
+          displayTag: 'Players Remaining',
+          showEnterButton: false,
+          countdown: '142 players' // Mock for now
+        };
+      } else {
+        // No more drops, check if final hour
+        const weekEndTime = getWeekEndTime(now);
+        const timeUntilEnd = weekEndTime.getTime() - now.getTime();
+        if (timeUntilEnd < (60 * 60 * 1000)) { // Less than 1 hour
+          return {
+            phase: 'FINAL_HOUR',
+            targetTime: weekEndTime,
+            displayTag: 'Final Hour',
+            showEnterButton: false,
+            countdown: calculateTimeDifference(weekEndTime)
+          };
+        } else {
+          return {
+            phase: 'TRADING_WEEK',
+            targetTime: weekEndTime,
+            displayTag: 'Players Remaining',
+            showEnterButton: false,
+            countdown: '142 players' // Mock for now
+          };
+        }
+      }
+    }
+  } else {
+    // Friday
+    const weekEndTime = getWeekEndTime(now);
+    const timeUntilEnd = weekEndTime.getTime() - now.getTime();
+
+    if (timeUntilEnd < (60 * 60 * 1000)) { // Less than 1 hour
+      return {
+        phase: 'FINAL_HOUR',
+        targetTime: weekEndTime,
+        displayTag: 'Final Hour',
+        showEnterButton: false,
+        countdown: calculateTimeDifference(weekEndTime)
+      };
+    } else {
+      return {
+        phase: 'TRADING_WEEK',
+        targetTime: weekEndTime,
+        displayTag: 'Players Remaining',
+        showEnterButton: false,
+        countdown: '142 players' // Mock for now
+      };
+    }
+  }
 };
