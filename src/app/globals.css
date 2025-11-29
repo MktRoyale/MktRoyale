@@ -31,6 +31,7 @@ body {
   font-family: 'Roboto Mono', var(--font-mono), monospace;
   min-height: 100vh;
   line-height: 1.6;
+  font-size: 14px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -39,6 +40,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+p, span, div {
+  font-family: 'Roboto Mono', var(--font-mono), monospace;
+  color: var(--off-white-text);
 }
 
 /* Cyberpunk Button Styling */
@@ -47,14 +54,15 @@ button {
   color: var(--cyber-black);
   font-family: 'Orbitron', sans-serif;
   border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 4px;
+  padding: 0.875rem 1.75rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   box-shadow: 0 0 8px var(--electric-yellow);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-size: 14px;
 }
 
 button:hover {
@@ -75,31 +83,52 @@ input[type="text"], input[type="email"], input[type="password"] {
   background-color: var(--subtle-gray);
   border: 1px solid var(--neon-teal);
   color: var(--off-white-text);
-  padding: 0.7rem;
-  border-radius: 4px;
+  padding: 0.875rem 1rem;
+  border-radius: 6px;
   transition: all 0.2s ease-in-out;
   font-family: 'Roboto Mono', monospace;
+  font-size: 14px;
+  width: 100%;
 }
 
 input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
   outline: none;
   border-color: var(--electric-yellow);
   box-shadow: 0 0 8px var(--electric-yellow);
-  background-color: rgba(51, 51, 68, 0.8);
+  background-color: rgba(51, 51, 68, 0.9);
+}
+
+input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="password"]::placeholder {
+  color: rgba(224, 224, 224, 0.6);
+  font-style: italic;
 }
 
 /* Cyberpunk Card Styling */
 .cyber-card {
-  background: rgba(10, 10, 15, 0.9);
-  border: 1px solid var(--neon-teal);
+  background: rgba(10, 10, 15, 0.95);
+  border: 1px solid var(--subtle-gray);
   border-radius: 8px;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
   backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .cyber-card:hover {
-  border-color: var(--electric-yellow);
-  box-shadow: 0 0 20px rgba(255, 230, 0, 0.2);
+  border-color: var(--neon-teal);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+/* General container spacing */
+.container-spacing {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Subtle dividers */
+.divider {
+  border-bottom: 1px solid var(--subtle-gray);
+  margin: 1rem 0;
 }
 
 /* Glitch Effect for Alerts */

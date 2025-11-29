@@ -6,9 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { ELECTRIC_YELLOW, NEON_TEAL, SUCCESS_GREEN } from "@/lib/constants";
 
+type DashboardTab = 'overview' | 'draft' | 'arena';
+
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const router = useRouter();
 
   useEffect(() => {
@@ -72,6 +75,12 @@ export default function Dashboard() {
     return null; // Will redirect via useEffect
   }
 
+  const tabs = [
+    { id: 'overview' as const, label: 'Overview', icon: '📊' },
+    { id: 'draft' as const, label: 'Draft Arena', icon: '⚔️' },
+    { id: 'arena' as const, label: 'Battle Arena', icon: '🎯' },
+  ];
+
   return (
     <div>
       <div className="mb-8">
@@ -83,7 +92,29 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="flex space-x-1 bg-gray-800/50 p-1 rounded-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-electric-yellow text-cyber-black shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Draft Status */}
         <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4" style={{ color: ELECTRIC_YELLOW }}>
@@ -174,37 +205,38 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mt-8 bg-gray-800/50 border border-gray-600 rounded-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 text-white">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => router.push('/draft')}
-            className="p-4 bg-electric-yellow/10 border border-electric-yellow/30 rounded-lg hover:bg-electric-yellow/20 transition-colors text-left"
-          >
-            <div className="font-bold text-electric-yellow mb-1">Draft Arena</div>
-            <div className="text-sm text-gray-300">Build your chrome lineup</div>
-          </button>
-
-          <button
-            onClick={() => router.push('/arena')}
-            className="p-4 bg-neon-teal/10 border border-neon-teal/30 rounded-lg hover:bg-neon-teal/20 transition-colors text-left"
-          >
-            <div className="font-bold text-neon-teal mb-1">Battle Arena</div>
-            <div className="text-sm text-gray-300">Deploy abilities, hack rivals</div>
-          </button>
-
-          <button
-            onClick={() => router.push('/rules')}
-            className="p-4 bg-gray-700/50 border border-gray-600 rounded-lg hover:bg-gray-600 transition-colors text-left"
-          >
-            <div className="font-bold text-white mb-1">Rules & Abilities</div>
-            <div className="text-sm text-gray-300">Master chrome warfare</div>
-          </button>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'draft' && (
+        <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-8">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-electric-yellow mb-4">Draft Arena</h3>
+            <p className="text-gray-300 mb-6">Build your chrome lineup for the upcoming battle</p>
+            <button
+              onClick={() => router.push('/draft')}
+              className="px-6 py-3 bg-electric-yellow text-cyber-black rounded-lg font-bold hover:bg-electric-yellow/90 transition-colors"
+            >
+              Enter Draft Arena
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'arena' && (
+        <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-8">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-neon-teal mb-4">Battle Arena</h3>
+            <p className="text-gray-300 mb-6">Deploy abilities, hack rivals, and claim victory</p>
+            <button
+              onClick={() => router.push('/arena')}
+              className="px-6 py-3 bg-neon-teal text-cyber-black rounded-lg font-bold hover:bg-neon-teal/90 transition-colors"
+            >
+              Enter Battle Arena
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Logout */}
       <div className="mt-8 text-center">
