@@ -203,12 +203,27 @@ export default function Draft() {
     setError("");
 
     try {
-      // Mock submission - in real app, this would save to database
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare final lineup data
+      const finalLineup = selectedStocks.map(stock => stock?.symbol || null).filter(Boolean);
 
-      // Redirect to arena
-      window.location.href = '/arena';
+      // Save to database - atomic operation
+      const { error } = await supabase
+        .from('users')
+        .update({
+          final_lineup: finalLineup,
+          lineup_locked: true,
+          lineup_hash: lineupHash
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Success - redirect to dashboard (which will show battle arena tab)
+      window.location.href = '/dashboard';
     } catch (err) {
+      console.error('Failed to submit lineup:', err);
       setError("Failed to submit lineup. Please try again.");
     } finally {
       setIsSubmitting(false);

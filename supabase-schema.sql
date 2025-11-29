@@ -16,6 +16,10 @@ CREATE TABLE public.users (
   prestige_tier prestige_tier DEFAULT 'rookie',
   lifetime_wins INTEGER DEFAULT 0,
   total_earnings DECIMAL(10,2) DEFAULT 0.00,
+  draft_lineup TEXT[], -- Temporary draft storage
+  final_lineup TEXT[], -- Final locked lineup
+  lineup_locked BOOLEAN DEFAULT FALSE,
+  lineup_hash TEXT, -- Hash of final lineup for uniqueness
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );

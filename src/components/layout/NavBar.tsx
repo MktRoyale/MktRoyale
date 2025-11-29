@@ -49,9 +49,6 @@ export default function NavBar() {
               <h1 className="text-2xl font-bold" style={{ color: ELECTRIC_YELLOW }}>
                 MktRoyale
               </h1>
-              <h2 className="text-sm font-medium" style={{ color: NEON_TEAL }}>
-                Chrome War - Battle Royale for Stock Traders
-              </h2>
             </div>
           </Link>
 
