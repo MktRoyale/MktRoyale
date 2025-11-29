@@ -344,7 +344,7 @@ export const getCurrentGameStatus = (options?: {
     // Monday-Thursday
     if (dayOfWeek === 1 && currentHour < 9) {
       // Monday before 9 AM - Draft Open
-      const draftCloseTime = getDraftCloseTime(now, 1, 9, 30);
+      const draftCloseTime = getDraftCloseTime(now);
       return {
         phase: 'DRAFT_OPEN',
         targetTime: draftCloseTime,
