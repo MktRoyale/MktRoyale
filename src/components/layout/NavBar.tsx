@@ -34,7 +34,8 @@ export default function NavBar() {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/royale", label: "Royale" },
+    { href: "/draft", label: "Draft Arena" },
+    { href: "/arena", label: "Battle Arena" },
     { href: "/profile", label: "Profile" },
     { href: "/rules", label: "Rules" },
   ]
@@ -43,8 +44,16 @@ export default function NavBar() {
     <header className="border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="text-2xl font-bold" style={{ color: ELECTRIC_YELLOW }}>
-            MktRoyale
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-electric-yellow to-chrome-blue rounded-lg flex items-center justify-center">
+              <span className="text-cyber-black font-bold text-sm">CW</span>
+            </div>
+            <div>
+              <div className="text-2xl font-bold" style={{ color: ELECTRIC_YELLOW }}>
+                Chrome War
+              </div>
+              <div className="text-xs" style={{ color: NEON_TEAL }}>Battle Royale</div>
+            </div>
           </Link>
 
           <nav className="hidden md:flex space-x-8">
