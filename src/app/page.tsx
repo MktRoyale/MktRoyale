@@ -9,15 +9,12 @@ export default function Home() {
 
   // FORCE DRAFT STATE for landing page testing
   const { displayTag, targetTime, showEnterButton, countdown } = getCurrentGameStatus({
-    forcePhase: 'DRAFT_OPEN',
-    draftCloseDay: 1,
-    draftCloseHour: 9,
-    draftCloseMinute: 30
+    forcePhase: 'DRAFT_OPEN'
   });
 
   const handleEnterArena = () => {
     if (showEnterButton) {
-      router.push('/draft');
+      router.push('/login');
     }
   };
 
@@ -46,13 +43,13 @@ export default function Home() {
           </span>
         </p>
 
-        {/* Enter Arena Button - Only show during draft phase */}
+        {/* Enter Button - Only show during draft phase */}
         {showEnterButton && (
           <button
             onClick={handleEnterArena}
             className="cyber-button text-xl px-12 py-6"
           >
-            Enter Arena
+            Enter
           </button>
         )}
       </div>

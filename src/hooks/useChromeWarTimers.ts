@@ -91,20 +91,31 @@ export const getNextDraftOpenTime = (currentDate: Date): Date => {
   return date;
 };
 
-// Calculate draft close time (next Monday at 9:30 AM ET or specified time)
-export const getDraftCloseTime = (currentDate: Date, draftCloseDay: number = 1, draftCloseHour: number = 9, draftCloseMinute: number = 30): Date => {
+// Calculate draft close time (next Monday at 9:30 AM ET)
+export const getDraftCloseTime = (currentDate: Date): Date => {
+  const DRAFT_CLOSE_HOUR = 9;  // 9 AM ET
+  const DRAFT_CLOSE_MINUTE = 30; // 30 minutes ET
+
+  // Use toZonedTime to get the current date aligned with ET
   const nowET = toZonedTime(currentDate, TIME_ZONE);
   let date = new Date(nowET);
-  const day = date.getDay();
+  const day = date.getDay(); // 0=Sun, 1=Mon
 
-  // Calculate days until specified draft close day (default Monday = 1)
-  let diff = draftCloseDay - day;
-  if (day > draftCloseDay) { // If we've passed the close day this week
-    diff = 7 + draftCloseDay - day; // Next week's close day
+  // Calculate days until Monday (1)
+  let diff = 1 - day;
+  if (diff < 0) {
+    diff += 7; // Wrap to next week
   }
 
   date.setDate(date.getDate() + diff);
-  date.setHours(draftCloseHour, draftCloseMinute, 0, 0);
+  date.setHours(DRAFT_CLOSE_HOUR, DRAFT_CLOSE_MINUTE, 0, 0);
+
+  // EDGE CASE: If it is currently Monday and past 9:30 AM ET, target the NEXT Monday.
+  if (day === 1 && nowET.getHours() > DRAFT_CLOSE_HOUR) {
+    date.setDate(date.getDate() + 7);
+  } else if (day === 1 && nowET.getHours() === DRAFT_CLOSE_HOUR && nowET.getMinutes() >= DRAFT_CLOSE_MINUTE) {
+    date.setDate(date.getDate() + 7);
+  }
 
   return date;
 };

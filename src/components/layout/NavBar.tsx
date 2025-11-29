@@ -38,7 +38,6 @@ export default function NavBar() {
   }
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard" },
     { href: "/rules", label: "Rules" },
   ]
 

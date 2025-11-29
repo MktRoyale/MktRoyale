@@ -221,7 +221,7 @@ export default function Draft() {
       }
 
       // Success - redirect to dashboard (which will show battle arena tab)
-      window.location.href = '/dashboard';
+      window.location.replace('/dashboard');
     } catch (err) {
       console.error('Failed to submit lineup:', err);
       setError("Failed to submit lineup. Please try again.");
@@ -284,6 +284,15 @@ export default function Draft() {
                   >
                     ×
                   </button>
+                  <img
+                    src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
+                    alt={`${stock.symbol} logo`}
+                    className="w-8 h-8 rounded object-contain mb-2"
+                    onError={(e) => {
+                      // Fallback to a generic stock icon if logo fails to load
+                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxNiIgeT0iMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
+                    }}
+                  />
                   <div className="font-bold text-lg">{stock.symbol}</div>
                   <div className="text-sm text-gray-300 text-center">{stock.name}</div>
                   <div className={`text-sm font-medium ${stock.change >= 0 ? 'text-success-green' : 'text-danger-red'}`}>
@@ -414,9 +423,19 @@ export default function Draft() {
                         {isFavorited ? '★' : '☆'}
                       </button>
 
-                      <div>
-                        <div className="font-bold text-white">{stock.symbol}</div>
-                        <div className="text-sm text-gray-400">{stock.name}</div>
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
+                          alt={`${stock.symbol} logo`}
+                          className="w-6 h-6 rounded object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iIzMzMzQ0NCIvPgo8dGV4dCB4PSIxMiIgeT0iMTYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iI0UwRTBFMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U1Q8L3RleHQ+Cjwvc3ZnPg==';
+                          }}
+                        />
+                        <div>
+                          <div className="font-bold text-white">{stock.symbol}</div>
+                          <div className="text-sm text-gray-400">{stock.name}</div>
+                        </div>
                       </div>
                     </div>
 

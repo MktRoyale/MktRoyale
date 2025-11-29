@@ -11,7 +11,7 @@ type DashboardTab = 'overview' | 'draft' | 'arena';
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('draft');
   const router = useRouter();
 
   useEffect(() => {
@@ -90,6 +90,24 @@ export default function Dashboard() {
         <p className="text-gray-300 mt-2">
           Welcome back, Commander {user.email?.split('@')[0] || 'Warrior'}
         </p>
+        <div className="mt-4">
+          <p
+            className="text-xl font-medium"
+            style={{
+              color: 'var(--off-white-text)',
+              fontFamily: 'Roboto Mono, monospace'
+            }}
+          >
+            Players Remaining:{' '}
+            <span
+              style={{
+                color: 'var(--neon-teal)'
+              }}
+            >
+              0
+            </span>
+          </p>
+        </div>
       </div>
 
       {/* Tab Navigation */}
