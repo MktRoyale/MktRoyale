@@ -8,9 +8,34 @@ import { ELECTRIC_YELLOW, NEON_TEAL, SUCCESS_GREEN } from "@/lib/constants";
 
 type DashboardTab = 'overview' | 'draft' | 'arena';
 
+// Mock stock data - same as used in draft page
+const MOCK_STOCKS = [
+  { symbol: "AAPL", name: "Apple Inc.", price: 195.50, change: 2.3, volume: "45.2M", sector: "Technology" },
+  { symbol: "MSFT", name: "Microsoft Corporation", price: 415.75, change: -0.8, volume: "23.1M", sector: "Technology" },
+  { symbol: "GOOGL", name: "Alphabet Inc.", price: 142.30, change: 1.7, volume: "18.9M", sector: "Technology" },
+  { symbol: "AMZN", name: "Amazon.com Inc.", price: 185.30, change: 3.2, volume: "31.5M", sector: "Consumer Discretionary" },
+  { symbol: "TSLA", name: "Tesla Inc.", price: 248.90, change: -1.2, volume: "67.8M", sector: "Consumer Discretionary" },
+  { symbol: "NVDA", name: "NVIDIA Corporation", price: 145.20, change: 5.7, volume: "89.3M", sector: "Technology" },
+  { symbol: "META", name: "Meta Platforms Inc.", price: 521.80, change: 0.9, volume: "15.6M", sector: "Technology" },
+  { symbol: "NFLX", name: "Netflix Inc.", price: 689.50, change: -2.1, volume: "8.7M", sector: "Communication Services" },
+  { symbol: "JPM", name: "JPMorgan Chase & Co.", price: 198.40, change: 1.5, volume: "12.3M", sector: "Financials" },
+  { symbol: "V", name: "Visa Inc.", price: 289.60, change: 0.3, volume: "9.2M", sector: "Financials" },
+  { symbol: "JNJ", name: "Johnson & Johnson", price: 167.80, change: -0.5, volume: "7.8M", sector: "Health Care" },
+  { symbol: "WMT", name: "Walmart Inc.", price: 89.20, change: 1.1, volume: "14.5M", sector: "Consumer Staples" },
+  { symbol: "PG", name: "Procter & Gamble Co.", price: 173.40, change: 0.8, volume: "6.9M", sector: "Consumer Staples" },
+  { symbol: "UNH", name: "UnitedHealth Group Inc.", price: 568.90, change: 2.8, volume: "3.2M", sector: "Health Care" },
+  { symbol: "HD", name: "Home Depot Inc.", price: 412.30, change: -1.9, volume: "4.1M", sector: "Consumer Discretionary" },
+  { symbol: "BAC", name: "Bank of America Corp.", price: 45.60, change: 1.2, volume: "28.7M", sector: "Financials" },
+  { symbol: "MA", name: "Mastercard Inc.", price: 512.70, change: 1.8, volume: "3.8M", sector: "Financials" },
+  { symbol: "PFE", name: "Pfizer Inc.", price: 28.90, change: -0.7, volume: "22.1M", sector: "Health Care" },
+  { symbol: "KO", name: "Coca-Cola Co.", price: 62.30, change: 0.5, volume: "11.6M", sector: "Consumer Staples" },
+  { symbol: "DIS", name: "Walt Disney Co.", price: 98.70, change: 2.4, volume: "16.8M", sector: "Communication Services" },
+];
+
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [stocks, setStocks] = useState<typeof MOCK_STOCKS>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashboardTab>('draft');
   const router = useRouter();
@@ -72,31 +97,50 @@ export default function Dashboard() {
           if (!session.user.id || typeof session.user.id !== 'string') {
             console.error('Invalid user ID for profile fetch');
             setProfile({});
-            return;
-          }
-
-          const { data: profileData, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          // AGGRESSIVE ERROR GUARDING: Handle profile errors gracefully
-          if (profileError) {
-            // PGRST116 is "not found" - this is acceptable for new users
-            if (profileError.code !== 'PGRST116') {
-              console.error('Profile fetch error:', profileError);
-            }
-            // Continue anyway - profile might not exist yet
-            setProfile({});
           } else {
-            // AGGRESSIVE ERROR GUARDING: Ensure profileData is valid
-            setProfile(profileData && typeof profileData === 'object' ? profileData : {});
+            const { data: profileData, error: profileError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            // AGGRESSIVE ERROR GUARDING: Handle profile errors gracefully
+            if (profileError) {
+              // PGRST116 is "not found" - this is acceptable for new users
+              if (profileError.code !== 'PGRST116') {
+                console.error('Profile fetch error:', profileError);
+              }
+              // Continue anyway - profile might not exist yet
+              setProfile({});
+            } else {
+              // AGGRESSIVE ERROR GUARDING: Ensure profileData is valid
+              setProfile(profileData && typeof profileData === 'object' ? profileData : {});
+            }
           }
         } catch (profileErr) {
           console.error('Failed to fetch profile:', profileErr);
           // Continue with empty profile - user can still access draft
           setProfile({});
+        }
+
+        // 3. Load stocks data (needed for Draft Arena) with aggressive error guarding
+        try {
+          // AGGRESSIVE ERROR GUARDING: Load stocks with try-catch to prevent crashes
+          // In production, this would fetch from an API, but for now we use mock data
+          // Simulate async loading to ensure proper initialization
+          await new Promise(resolve => setTimeout(resolve, 0)); // Allow React to process
+          
+          // AGGRESSIVE ERROR GUARDING: Validate MOCK_STOCKS before setting
+          if (Array.isArray(MOCK_STOCKS) && MOCK_STOCKS.length > 0) {
+            setStocks(MOCK_STOCKS);
+          } else {
+            console.error('Invalid stocks data: MOCK_STOCKS is empty or not an array');
+            setStocks([]);
+          }
+        } catch (stocksErr) {
+          console.error('Failed to load stocks:', stocksErr);
+          // Set empty array to prevent crashes, but loading guard will catch this
+          setStocks([]);
         }
 
       } catch (error) {
@@ -187,8 +231,17 @@ export default function Dashboard() {
   };
 
   // GLOBAL LOADING STATE - Prevent ANY rendering until all required data is loaded
-  // AGGRESSIVE ERROR GUARDING: Comprehensive null/undefined checks
-  if (loading || !user || profile === null || typeof user !== 'object' || !user.id) {
+  // AGGRESSIVE ERROR GUARDING: Comprehensive null/undefined checks for session, profile, and stocks
+  if (
+    loading || 
+    !user || 
+    profile === null || 
+    typeof user !== 'object' || 
+    !user.id ||
+    !stocks ||
+    !Array.isArray(stocks) ||
+    stocks.length === 0
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cyber-black">
         <div className="text-center">
