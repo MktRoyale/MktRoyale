@@ -3,33 +3,29 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MktRoyaleTitle from "@/components/MktRoyaleTitle";
+import { getDraftCloseTime, formatDraftCountdown } from "@/hooks/useChromeWarTimers";
 
 export default function Home() {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState('00:00:00');
 
   useEffect(() => {
-    // Define a SIMPLE static target time (e.g., 48 hours from now) for display purposes.
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 2); // Two days from now
+    // Calculate the accurate target time using getDraftCloseTime
+    const targetDate = getDraftCloseTime(new Date());
 
     const timer = setInterval(() => {
       const now = new Date();
-      const difference = targetDate.getTime() - now.getTime();
+      const countdown = formatDraftCountdown(targetDate, now);
+      setTimeLeft(countdown);
 
-      if (difference > 0) {
-        // Simple calculation for days, hours, minutes, seconds format
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
-      } else {
+      // Stop timer if draft is closed
+      if (countdown === 'Draft is Closed') {
         clearInterval(timer);
-        setTimeLeft('Draft is Closed');
       }
     }, 1000);
+
+    // Initial calculation
+    setTimeLeft(formatDraftCountdown(targetDate));
 
     return () => clearInterval(timer);
   }, []);

@@ -14,7 +14,9 @@ export interface ChromeWarTimerState {
 }
 
 // Core Constants - All times in ET (America/New_York)
-const TIME_ZONE = 'America/New_York';
+export const TIME_ZONE = 'America/New_York';
+export const DRAFT_CLOSE_HOUR = 9;  // 9 AM ET
+export const DRAFT_CLOSE_MINUTE = 30; // 30 minutes ET
 const MARKET_CLOSE_HOUR = 16; // 4 PM ET
 const MARKET_CLOSE_MINUTE = 0;
 
@@ -92,21 +94,20 @@ export const getNextDraftOpenTime = (currentDate: Date): Date => {
 };
 
 // Calculate draft close time (next Monday at 9:30 AM ET)
-const getDraftCloseTime = (now: Date): Date => {
-  const DRAFT_CLOSE_HOUR = 9;  // 9 AM ET
-  const DRAFT_CLOSE_MINUTE = 30; // 30 minutes ET
+export const getDraftCloseTime = (now: Date): Date => {
+  // Convert the current UTC time to the target time zone (ET)
+  let nowET = toZonedTime(now, TIME_ZONE);
+  let target = new Date(nowET); // Start building the target from the current time in ET
 
-  // Use 'date-fns-tz' to establish a consistent starting point in the target time zone (ET).
-  const nowET = toZonedTime(now, TIME_ZONE);
-  let target = new Date(nowET);
+  // Calculate days until the next Monday (where Monday is day 1, Sunday is day 0)
+  const day = nowET.getDay();
+  // (1 + 7 - day) % 7 calculates days to next Monday, handling wrap-around.
+  const daysToAdd = (1 + 7 - day) % 7;
 
-  // 1. Start by finding the next Monday.
-  target.setDate(nowET.getDate() + (1 + 7 - nowET.getDay()) % 7);
-
-  // 2. Set the exact close time.
+  target.setDate(nowET.getDate() + daysToAdd);
   target.setHours(DRAFT_CLOSE_HOUR, DRAFT_CLOSE_MINUTE, 0, 0);
 
-  // 3. Handle the edge case: If the calculated target is TODAY (Monday) but the current time is ALREADY past 9:30 AM ET, we must target the following Monday.
+  // CRITICAL EDGE CASE: If the calculated target is TODAY (Monday) and the current time is ALREADY past 9:30 AM ET, target the following Monday.
   const isTodayMonday = nowET.getDay() === 1;
   const isPastCloseTime = nowET.getHours() > DRAFT_CLOSE_HOUR ||
                           (nowET.getHours() === DRAFT_CLOSE_HOUR && nowET.getMinutes() >= DRAFT_CLOSE_MINUTE);
@@ -115,8 +116,24 @@ const getDraftCloseTime = (now: Date): Date => {
       target.setDate(target.getDate() + 7); // Advance to next Monday
   }
 
-  // Convert the local date object back to a UTC/standard Date object for countdown math.
+  // Convert the calculated local time (target) back to a standard JavaScript Date object for reliable countdown math.
   return target;
+};
+
+// Format countdown time as '2d 14h 32m 01s' format
+export const formatDraftCountdown = (targetDate: Date, currentDate: Date = new Date()): string => {
+  const difference = targetDate.getTime() - currentDate.getTime();
+
+  if (difference <= 0) {
+    return 'Draft is Closed';
+  }
+
+  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+  return `${days}d ${hours}h ${minutes}m ${seconds.toString().padStart(2, '0')}s`;
 };
 
 // Calculate DROP number (1=Tue, 2=Wed, 3=Thu)
