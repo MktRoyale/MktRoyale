@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   console.log('Magic link params:', { token_hash, type, next }) // DEBUG LOG
 
   if (token_hash && type === 'magiclink') {
-    const supabase = createSupabaseServerClient()
+    const supabase = await createSupabaseServerClient()
 
     const { data, error } = await supabase.auth.verifyOtp({ token_hash, type: 'magiclink' })
 
