@@ -1,26 +1,24 @@
-import { createClient } from '@/lib/supabaseClient'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const token_hash = searchParams.get('token_hash')
-  const type = searchParams.get('type')
-  const next = searchParams.get('next') ?? '/dashboard'
+export const GET = async (request: Request) => {
+  const requestUrl = new URL(request.url)
+  const token_hash = requestUrl.searchParams.get('token_hash')
+  const type = requestUrl.searchParams.get('type')
+  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-  if (token_hash && type === 'magiclink') {
-    const supabase = createClient(cookies())
+  if (token_hash && type) {
+    const supabase = createRouteHandlerClient({ cookies })
     const { error } = await supabase.auth.verifyOtp({
+      type: 'email',
       token_hash,
-      type: 'magiclink',
-      options: { redirectTo: origin },
     })
 
     if (!error) {
-      return NextResponse.redirect(new URL(next, origin))
+      return NextResponse.redirect(new URL(next, requestUrl.origin))
     }
   }
 
-  // Fallback on error
-  return NextResponse.redirect(new URL('/login?message=Link expired', origin))
+  return NextResponse.redirect(new URL('/login?error=Link+expired', requestUrl.origin))
 }
